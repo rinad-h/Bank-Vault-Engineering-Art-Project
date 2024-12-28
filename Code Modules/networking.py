@@ -2,8 +2,8 @@ import time
 import network
 
 # Wi-Fi credentials
-ssid = 'SHAW-323D'
-password = 'eighty3134alert'  # This should be ‘airuc-guest’ on campus Wi-Fi
+ssid = 'YOUR WIFI'            #Change wifi
+password = 'YOUR PASSWORD'  # Change password
 
 def connect():
     """
