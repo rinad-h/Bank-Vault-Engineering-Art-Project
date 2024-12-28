@@ -1,35 +1,36 @@
 import time
+import machine
 from machine import Pin
-from button_handler_module import ButtonHandler
-from led_control_module import LEDControl
-from lcd_display_module import LCDDisplay
-from servo_motor_module import ServoMotor
-from api_handler_module import APIHandler
+import utime
+from networking import connect
+from lcd_display import init_lcd, display_message
+from button_control import button_press
+from neopixel_control import init_neopixels, set_neopixels
+from exchange_rate import get_exchange_rate
 
-# Initialize components
-led = LEDControl(pin=0)  # LED control on pin 0
-servo = ServoMotor(pin=5)  # Servo motor on pin 5
-lcd = LCDDisplay(sda_pin=26, scl_pin=27)  # LCD with SDA on pin 26 and SCL on pin 27
-api = APIHandler("https://v6.exchangerate-api.com/v6/3caccaae69d659b02629d974/latest/CAD")  # API for exchange rates
+# Set up hardware components
+sda = machine.Pin(26)
+scl = machine.Pin(27)
+lcd = init_lcd(sda, scl)  # Initialize the LCD display
 
-# Configure button input
+# Set up button
 button = Pin(1, Pin.IN, Pin.PULL_DOWN)
-button_handler = ButtonHandler(button, debounce_ms=200)  # Button handler with 200ms debounce
+button.irq(trigger=Pin.IRQ_FALLING, handler=button_press)  # Attach interrupt handler for button press
 
-# Define button press callback function
-def on_button_press():
-    """
-    Executes when the button is pressed.
-    Rotates the servo, toggles the LED, and displays a random exchange rate.
-    """
-    servo.rotate()  # Rotate the servo
-    led.toggle()  # Toggle the LED state
-    rate = api.get_random_conversion_rate()  # Fetch a random exchange rate
-    lcd.display_message(rate)  # Display the rate on the LCD
+# Set up neopixels
+numpix = 30
+pixels = init_neopixels(numpix, 28)  # Initialize NeoPixels with 30 pixels on pin 28
 
-# Set the button press callback
-button_handler.set_callback(on_button_press)
+# Connect to Wi-Fi
+try:
+    connect()  # Attempt to connect to Wi-Fi
+except KeyboardInterrupt:
+    machine.reset()  # Reset the machine on KeyboardInterrupt
+    print('Connected. End of code.')
 
-# Keep the program running
+# Main loop
 while True:
-    time.sleep(1)
+    exchange_rate = button_press(button)  # Fetch the exchange rate on button press
+    if exchange_rate:  # If exchange rate data is received
+        display_message(lcd, exchange_rate)  # Display the exchange rate on the LCD
+    time.sleep(1)  # Sleep for 1 second before checking again
